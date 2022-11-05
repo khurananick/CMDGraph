@@ -29,30 +29,40 @@ async function getAllPersonCards() {
   return peopleJson.data;
 }
 
+async function getStructuredPersonRelations(person_id) {
+  const response = await fetch(`/cmdbuild/services/rest/v3/classes/Person/cards/${person_id}/relations`);
+  const json = await response.json();
+
+  const structuredList = {};
+  for(const person of json.data) {
+    const key = (function() {
+      return person._type == "ManagerMapping" ? `${person._type} - ${person._direction}` : `${person._type}`;
+    })();
+
+    if(!structuredList[key])
+      structuredList[key] = [];
+
+    const personRecord = (function() {
+      for(const p of peopleJson)
+        if(p.Code == person._destinationCode)
+          return p;
+    })();
+
+    structuredList[key].push(personRecord);
+  }
+
+  return structuredList;
+}
+
 (async function() {
   const peopleJson = await getAllPersonCards();
 
   if(Get.person_id) {
-    const response = await fetch(`/cmdbuild/services/rest/v3/classes/Person/cards/${Get.person_id}/relations`);
-    const json = await response.json();
-    console.log(json);
+    const structuredRelations = getStructuredPersonRelations(Get.person_id);
+    console.log(structuredRelations);
 
-    const structuredList = {};
-    for(const person of json.data) {
-      const key = (function() {
-        return person._type == "ManagerMapping" ? `${person._type} - ${person._direction}` : `${person._type}`;
-      })();
-      if(!structuredList[key])
-        structuredList[key] = [];
-      const personRecord = (function() {
-        for(const p of peopleJson)
-          if(p.Code == person._destinationCode)
-            return p;
-      })();
-      structuredList[key].push(personRecord);
-    }
-    for(const i in structuredList) {
-      createListWithHeadingHTML(i, structuredList[i]);
+    for(const i in structuredRelations) {
+      createListWithHeadingHTML(i, structuredRelations[i]);
     }
   }
   else {
