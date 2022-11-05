@@ -120,6 +120,9 @@ async function getStructuredPersonRelations(peopleJson, relationsJson) {
   return structuredList;
 }
 
+
+let goJsDataObj = {};
+
 function createGoJsFormattedData(root, parent, structuredRelations) {
   function getDirection(relationType) {
     if(relationType == 'TeamMateMapping') return 'left';
@@ -127,25 +130,24 @@ function createGoJsFormattedData(root, parent, structuredRelations) {
     return 'right';
   }
 
-  const arr = [];
-
-  if(root)
-    arr.push({
+  if(root && !goJsDataObj[root._id])
+    goJsDataObj[root._id] = {
       key: getPersonName(root),
       id: root._id
-    });
+    };
 
   for(const relations of Object.values(structuredRelations)) {
     for(const relation of relations) {
-      arr.push({
-        key: getPersonName(relation),
-        id: relation._id,
-        parent: getPersonName(parent),
-        dir: getDirection(relation.relationType)
-      });
+      if(!goJsDataObj[relation._id]) {
+        goJsDataObj[relation._id] = {
+          key: getPersonName(relation),
+          id: relation._id,
+          parent: getPersonName(parent),
+          dir: getDirection(relation.relationType)
+        };
+      }
     }
   }
-  return arr;
 }
 
 (async function() {
@@ -156,16 +158,17 @@ function createGoJsFormattedData(root, parent, structuredRelations) {
     const relationsJson = await getPersonRelations(Get.person_id);
     const structuredRelations = await getStructuredPersonRelations(peopleJson, relationsJson);
 
-    let goJsData = createGoJsFormattedData(personJson, personJson, structuredRelations);
+    createGoJsFormattedData(personJson, personJson, structuredRelations);
 
     for(const relations of Object.values(structuredRelations)) {
       for(const relationPersonJson of relations) {
         const relationPersonRelationsJson = await getPersonRelations(relationPersonJson._id);
         const relationPersonStructuredRelations = await getStructuredPersonRelations(peopleJson, relationPersonRelationsJson);
-        goJsData = goJsData.concat(createGoJsFormattedData(null, relationPersonJson, relationPersonStructuredRelations));
+        createGoJsFormattedData(null, relationPersonJson, relationPersonStructuredRelations);
       }
     }
 
+    goJsData = Object.values(goJsDataObj);
     console.log(goJsData);
 
     initGoJs(goJsData);
