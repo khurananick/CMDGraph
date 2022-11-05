@@ -26,22 +26,33 @@ function initGoJs(data) {
   var lavgrad = $(go.Brush, "Linear", { 0: "#EF9EFA", 1: "#A570AD" });
 
   myDiagram.nodeTemplate =
-    $(go.Node, "Auto",
-      { isShadowed: true },
-      // define the node's outer shape
-      $(go.Shape, "RoundedRectangle",
-        { fill: graygrad, stroke: "#D8D8D8" },  // default fill is gray
-        new go.Binding("fill", "color")),
-      // define the node's text
-      $(go.TextBlock,
-        { margin: 5, font: "bold 11px Helvetica, bold Arial, sans-serif" },
-        new go.Binding("text", "key"))
-    );
+  $(go.Node, "Vertical",
+    $(go.TextBlock,
+      { margin: new go.Margin(3, 0, 0, 0),
+        maxSize: new go.Size(100, 30),
+        isMultiline: false,
+        font: "bold 10pt sans-serif" },
+      new go.Binding("text", "key")),
+    $(go.Picture,
+      { maxSize: new go.Size(50, 50) },
+      new go.Binding("source", "img")),
+    $(go.TextBlock,
+      { margin: new go.Margin(3, 0, 0, 0),
+        maxSize: new go.Size(100, 30),
+        isMultiline: false },
+      new go.Binding("text", "id"))
+  );
 
   myDiagram.linkTemplate =
     $(go.Link,  // the whole link panel
       { selectable: false },
       $(go.Shape));  // the link shape
+
+  myDiagram.addDiagramListener("ObjectSingleClicked",
+    function(e) {
+      if(Number(e.subject.cc))
+        document.location = `/cmdbuild/ui/CMDGraph/index.html?person_id=${e.subject.cc}`;
+    });
 
   // create the model for the double tree; could be eiher TreeModel or GraphLinksModel
   myDiagram.model = new go.TreeModel(data);
@@ -104,6 +115,7 @@ async function getStructuredPersonRelations(peopleJson, relationsJson) {
     structuredList[key].push(personRecord);
   }
 
+  delete structuredList['PodMemberMapping'];
   return structuredList;
 }
 
@@ -111,17 +123,20 @@ function createGoJsFormattedData(root, structuredRelations) {
   const arr = [];
 
   arr.push({
-    key: getPersonName(root)
+    key: getPersonName(root),
+    id: root._id
   });
 
   for(const relations of Object.values(structuredRelations)) {
     for(const relation of relations) {
       arr.push({
         key: getPersonName(relation),
+        id: relation._id,
         parent: getPersonName(root)
       });
     }
   }
+  return arr;
 }
 
 (async function() {
@@ -144,7 +159,6 @@ function createGoJsFormattedData(root, structuredRelations) {
     createListWithHeadingHTML("People", peopleJson);
   }
 })();
-
 
 
 /*
