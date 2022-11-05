@@ -29,7 +29,7 @@ function initGoJs(data) {
   $(go.Node, "Vertical",
     $(go.TextBlock,
       { margin: new go.Margin(3, 0, 0, 0),
-        maxSize: new go.Size(100, 30),
+        maxSize: new go.Size(200, 30),
         isMultiline: false,
         font: "bold 10pt sans-serif" },
       new go.Binding("text", "key")),
@@ -98,6 +98,8 @@ function getPersonName(personJson) {
 function mappingDisplayName(mapName) {
   if(mapName == "ManagerMapping - inverse")
     return "Manager"
+  if(mapName == "ManagerMapping - direct")
+    return "Direct Report"
   if(mapName == "AEtoSEMapping")
     return "AE/SE"
   if(mapName == "TeamMateMapping")
