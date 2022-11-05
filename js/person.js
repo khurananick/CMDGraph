@@ -98,6 +98,19 @@ function getPersonName(personJson) {
   return `${personJson.last_name}, ${personJson.first_name}`;
 }
 
+function mappingDisplayName(mapName) {
+  if(mapName == "ManagerMapping - inverse")
+    return "Direct Report"
+  if(mapName == "ManagerMapping - direct")
+    return "Manager"
+  if(mapName == "AEtoSEMapping")
+    return "AE/SE"
+  if(mapName == "TeamMateMapping")
+    return "Team Member"
+
+  return mapName;
+}
+
 async function getPersonRelations(person_id) {
   const response = await fetch(`/cmdbuild/services/rest/v3/classes/Person/cards/${person_id}/relations`);
   const json = await response.json();
@@ -189,11 +202,9 @@ function updateLinkData(personJson, structuredRelations) {
 
   for(const relations of Object.values(structuredRelations)) {
     for(const relation of relations) {
-      if(!findExistingMapping(relation)) {
-        linkDataArray.push({
-          from: personJson.Code, to: relation.Code, text: relation.relationType
-        })
-      }
+      linkDataArray.push({
+        from: personJson.Code, to: relation.Code, text: mappingDisplayName(relation.relationType)
+      })
     }
   }
 }
@@ -220,19 +231,6 @@ function updateLinkData(personJson, structuredRelations) {
     console.log(nodeDataArray);
     console.log(linkDataArray);
 
-    /*
-    for(const relations of Object.values(structuredRelations)) {
-      for(const relation of relations) {
-        nodeDataArray.push({
-          key: relation.Code,
-          text: getPersonName(relation)
-        });
-        linkDataArray.push({
-          from: personJson.Code, to: relation.Code, text: relation.relationType
-        })
-      }
-    }
-   */
     init(nodeDataArray, linkDataArray)
   }
   else {
