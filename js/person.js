@@ -33,6 +33,11 @@ function initGoJs(data) {
         isMultiline: false,
         font: "bold 10pt sans-serif" },
       new go.Binding("text", "key")),
+    $(go.TextBlock,
+      { margin: new go.Margin(3, 0, 0, 0),
+        maxSize: new go.Size(100, 30),
+        isMultiline: false },
+      new go.Binding("text", "relation")),
     $(go.Picture,
       { maxSize: new go.Size(50, 50) },
       new go.Binding("source", "img")),
@@ -90,6 +95,17 @@ function getPersonName(personJson) {
   return `${personJson.last_name}, ${personJson.first_name}`;
 }
 
+function mappingDisplayName(mapName) {
+  if(mapName == "ManagerMapping - inverse")
+    return "Manager"
+  if(mapName == "AEtoSEMapping")
+    return "AE/SE"
+  if(mapName == "TeamMateMapping")
+    return "Team Member"
+
+  return mapName;
+}
+
 async function getPersonRelations(person_id) {
   const response = await fetch(`/cmdbuild/services/rest/v3/classes/Person/cards/${person_id}/relations`);
   const json = await response.json();
@@ -133,7 +149,8 @@ function createGoJsFormattedData(root, parent, structuredRelations) {
   if(root && !goJsDataObj[root._id])
     goJsDataObj[root._id] = {
       key: getPersonName(root),
-      id: root._id
+      id: root._id,
+      relation: "--------"
     };
 
   for(const relations of Object.values(structuredRelations)) {
@@ -142,6 +159,7 @@ function createGoJsFormattedData(root, parent, structuredRelations) {
         goJsDataObj[relation._id] = {
           key: getPersonName(relation),
           id: relation._id,
+          relation: mappingDisplayName(relation.relationType),
           parent: getPersonName(parent),
           dir: getDirection(relation.relationType)
         };
