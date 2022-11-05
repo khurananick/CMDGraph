@@ -58,7 +58,7 @@ async function getStructuredPersonRelations(person_id) {
 (async function() {
 
   if(Get.person_id) {
-    const structuredRelations = getStructuredPersonRelations(Get.person_id);
+    const structuredRelations = await getStructuredPersonRelations(Get.person_id);
     console.log(structuredRelations);
 
     for(const i in structuredRelations) {
