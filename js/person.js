@@ -30,6 +30,7 @@ async function getAllPersonCards() {
 }
 
 async function getStructuredPersonRelations(person_id) {
+  const peopleJson = await getAllPersonCards();
   const response = await fetch(`/cmdbuild/services/rest/v3/classes/Person/cards/${person_id}/relations`);
   const json = await response.json();
 
@@ -55,7 +56,6 @@ async function getStructuredPersonRelations(person_id) {
 }
 
 (async function() {
-  const peopleJson = await getAllPersonCards();
 
   if(Get.person_id) {
     const structuredRelations = getStructuredPersonRelations(Get.person_id);
@@ -66,6 +66,7 @@ async function getStructuredPersonRelations(person_id) {
     }
   }
   else {
+    const peopleJson = await getAllPersonCards();
     createListWithHeadingHTML("People", peopleJson);
   }
 })();
