@@ -1,52 +1,19 @@
 const div = document.getElementById("people");
 
-function initGoJs(data) {
+function init(nodeDataArray, linkDataArray) {
   // Since 2.2 you can also author concise templates with method chaining instead of GraphObject.make
   // For details, see https://gojs.net/latest/intro/buildingObjects.html
-  const $ = go.GraphObject.make;  // for conciseness in defining templates in this function
+  const $ = go.GraphObject.make;  // for conciseness in defining templates
 
   myDiagram =
-    $(go.Diagram, "myDiagramDiv",
+    $(go.Diagram, "myDiagramDiv",  // must name or refer to the DIV HTML element
       {
-        layout: $(DoubleTreeLayout,
-          {
-            //vertical: true,  // default directions are horizontal
-            // choose whether this subtree is growing towards the right or towards the left:
-            directionFunction: n => n.data && n.data.dir !== "left"
-            // controlling the parameters of each TreeLayout:
-            //bottomRightOptions: { nodeSpacing: 0, layerSpacing: 20 },
-            //topLeftOptions: { alignment: go.TreeLayout.AlignmentStart },
-          })
+        initialAutoScale: go.Diagram.Uniform,  // an initial automatic zoom-to-fit
+        contentAlignment: go.Spot.Center,  // align document to the center of the viewport
+        layout:
+          $(go.ForceDirectedLayout,  // automatically spread nodes apart
+            { maxIterations: 200, defaultSpringLength: 30, defaultElectricalCharge: 100 })
       });
-
-  // define all of the gradient brushes
-  var graygrad = $(go.Brush, "Linear", { 0: "#F5F5F5", 1: "#F1F1F1" });
-  var bluegrad = $(go.Brush, "Linear", { 0: "#CDDAF0", 1: "#91ADDD" });
-  var yellowgrad = $(go.Brush, "Linear", { 0: "#FEC901", 1: "#FEA200" });
-  var lavgrad = $(go.Brush, "Linear", { 0: "#EF9EFA", 1: "#A570AD" });
-
-  myDiagram.nodeTemplate =
-  $(go.Node, "Vertical",
-    $(go.TextBlock,
-      { margin: new go.Margin(3, 0, 0, 0),
-        maxSize: new go.Size(100, 30),
-        isMultiline: false,
-        font: "bold 10pt sans-serif" },
-      new go.Binding("text", "key")),
-    $(go.Picture,
-      { maxSize: new go.Size(50, 50) },
-      new go.Binding("source", "img")),
-    $(go.TextBlock,
-      { margin: new go.Margin(3, 0, 0, 0),
-        maxSize: new go.Size(100, 30),
-        isMultiline: false },
-      new go.Binding("text", "id"))
-  );
-
-  myDiagram.linkTemplate =
-    $(go.Link,  // the whole link panel
-      { selectable: false },
-      $(go.Shape));  // the link shape
 
   myDiagram.addDiagramListener("ObjectSingleClicked",
     function(e) {
@@ -54,8 +21,49 @@ function initGoJs(data) {
         document.location = `/cmdbuild/ui/CMDGraph/index.html?person_id=${e.subject.cc}`;
     });
 
-  // create the model for the double tree; could be eiher TreeModel or GraphLinksModel
-  myDiagram.model = new go.TreeModel(data);
+  // define each Node's appearance
+  myDiagram.nodeTemplate =
+    $(go.Node, "Vertical",
+      $(go.TextBlock,
+        { margin: new go.Margin(3, 0, 0, 0),
+          maxSize: new go.Size(100, 30),
+          isMultiline: false,
+          font: "bold 10pt sans-serif" },
+        new go.Binding("text", "key")),
+      $(go.Picture,
+        { maxSize: new go.Size(50, 50) },
+        new go.Binding("source", "img")),
+      $(go.TextBlock,
+        { margin: new go.Margin(3, 0, 0, 0),
+          maxSize: new go.Size(100, 30),
+          isMultiline: false },
+        new go.Binding("text", "id"))
+    );
+
+  // replace the default Link template in the linkTemplateMap
+  myDiagram.linkTemplate =
+    $(go.Link,  // the whole link panel
+      $(go.Shape,  // the link shape
+        { stroke: "black" }),
+      $(go.Shape,  // the arrowhead
+        { toArrow: "standard", stroke: null }),
+      $(go.Panel, "Auto",
+        $(go.Shape,  // the label background, which becomes transparent around the edges
+          {
+            fill: $(go.Brush, "Radial", { 0: "rgb(240, 240, 240)", 0.3: "rgb(240, 240, 240)", 1: "rgba(240, 240, 240, 0)" }),
+            stroke: null
+          }),
+        $(go.TextBlock,  // the label text
+          {
+            textAlign: "center",
+            font: "10pt helvetica, arial, sans-serif",
+            stroke: "#555555",
+            margin: 4
+          },
+          new go.Binding("text", "text"))
+      )
+    );
+  myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
 }
 
 function createListWithHeadingHTML(headingStr, list) {
@@ -148,6 +156,48 @@ function createGoJsFormattedData(root, parent, structuredRelations) {
   return arr;
 }
 
+let nodeDataObj = {};
+let nodeDataArray = [];
+function updateNodeData(personJson, structuredRelations) {
+  nodeDataObj[personJson.Code] = {
+    key: personJson.Code,
+    text: getPersonName(personJson),
+    id: personJson._id
+  };
+
+  for(const relations of Object.values(structuredRelations)) {
+    for(const relationPersonJson of relations) {
+      nodeDataObj[relationPersonJson.Code] = {
+        key: relationPersonJson.Code,
+        text: getPersonName(relationPersonJson),
+        id: relationPersonJson._id
+      };
+    }
+  }
+
+  nodeDataArray = Object.values(nodeDataObj);
+}
+
+let linkDataArray = [];
+function updateLinkData(personJson, structuredRelations) {
+  function findExistingMapping(relation) {
+    for (const link of linkDataArray) {
+      if((link.to == personJson.Code && link.from == relation.Code) || (link.to ==  relation.Code && link.from == personJson.Code))
+        return true;
+    }
+  }
+
+  for(const relations of Object.values(structuredRelations)) {
+    for(const relation of relations) {
+      if(!findExistingMapping(relation)) {
+        linkDataArray.push({
+          from: personJson.Code, to: relation.Code, text: relation.relationType
+        })
+      }
+    }
+  }
+}
+
 (async function() {
   const peopleJson = await getAllPersonCards();
 
@@ -155,53 +205,92 @@ function createGoJsFormattedData(root, parent, structuredRelations) {
     const personJson = getPersonCard(peopleJson, Get.person_id);
     const relationsJson = await getPersonRelations(Get.person_id);
     const structuredRelations = await getStructuredPersonRelations(peopleJson, relationsJson);
-
-    let goJsData = createGoJsFormattedData(personJson, personJson, structuredRelations);
+    updateNodeData(personJson, structuredRelations);
+    updateLinkData(personJson, structuredRelations);
 
     for(const relations of Object.values(structuredRelations)) {
       for(const relationPersonJson of relations) {
         const relationPersonRelationsJson = await getPersonRelations(relationPersonJson._id);
         const relationPersonStructuredRelations = await getStructuredPersonRelations(peopleJson, relationPersonRelationsJson);
-        goJsData = goJsData.concat(createGoJsFormattedData(null, relationPersonJson, relationPersonStructuredRelations));
+        updateNodeData(relationPersonJson, relationPersonStructuredRelations);
+        updateLinkData(relationPersonJson, relationPersonStructuredRelations);
       }
     }
 
-    console.log(goJsData);
-
-    initGoJs(goJsData);
+    console.log(nodeDataArray);
+    console.log(linkDataArray);
 
     /*
-    //document.getElementById("person").textContent = getPersonName(personJson);
-    for(const i in structuredRelations) {
-      createListWithHeadingHTML(i, structuredRelations[i]);
+    for(const relations of Object.values(structuredRelations)) {
+      for(const relation of relations) {
+        nodeDataArray.push({
+          key: relation.Code,
+          text: getPersonName(relation)
+        });
+        linkDataArray.push({
+          from: personJson.Code, to: relation.Code, text: relation.relationType
+        })
+      }
     }
-    */
+   */
+    init(nodeDataArray, linkDataArray)
   }
   else {
     createListWithHeadingHTML("People", peopleJson);
   }
 })();
-
-
 /*
-[
-  { key: "Root", color: lavgrad },
-  { key: "Left1", parent: "Root", dir: "left", color: bluegrad },
-  { key: "leaf1", parent: "Left1" },
-  { key: "leaf2", parent: "Left1" },
-  { key: "Left2", parent: "Left1", color: bluegrad },
-  { key: "leaf3", parent: "Left2" },
-  { key: "leaf4", parent: "Left2" },
-  { key: "leaf5", parent: "Left1" },
-  { key: "Right1", parent: "Root", dir: "right", color: yellowgrad },
-  { key: "Right2", parent: "Right1", color: yellowgrad },
-  { key: "leaf11", parent: "Right2" },
-  { key: "leaf12", parent: "Right2" },
-  { key: "leaf13", parent: "Right2" },
-  { key: "leaf14", parent: "Right1" },
-  { key: "leaf15", parent: "Right1" },
-  { key: "Right3", parent: "Root", dir: "right", color: yellowgrad },
-  { key: "leaf16", parent: "Right3" },
-  { key: "leaf17", parent: "Right3" }
-]
+ for(const relationPersonJson of relations) {
+-        const relationPersonRelationsJson = await getPersonRelations(relationPersonJson._id);
+-        const relationPersonStructuredRelations = await getStructuredPersonRelations(peopleJson, relationPersonRelationsJson);
+-        goJsData = goJsData.concat(createGoJsFormattedData(null, relationPersonJson, relationPersonStructuredRelations));
+       var nodeDataArray = [
+        { key: 1, text: "Concept Maps" },
+        { key: 2, text: "Organized Knowledge" },
+        { key: 3, text: "Context Dependent" },
+        { key: 4, text: "Concepts" },
+        { key: 5, text: "Propositions" },
+        { key: 6, text: "Associated Feelings or Affect" },
+        { key: 7, text: "Perceived Regularities" },
+        { key: 8, text: "Labeled" },
+        { key: 9, text: "Hierarchically Structured" },
+        { key: 10, text: "Effective Teaching" },
+        { key: 11, text: "Crosslinks" },
+        { key: 12, text: "Effective Learning" },
+        { key: 13, text: "Events (Happenings)" },
+        { key: 14, text: "Objects (Things)" },
+        { key: 15, text: "Symbols" },
+        { key: 16, text: "Words" },
+        { key: 17, text: "Creativity" },
+        { key: 18, text: "Interrelationships" },
+        { key: 19, text: "Infants" },
+        { key: 20, text: "Different Map Segments" }
+      ];
+      var linkDataArray = [
+        { from: 1, to: 2, text: "represent" },
+        { from: 2, to: 3, text: "is" },
+        { from: 2, to: 4, text: "is" },
+        { from: 2, to: 5, text: "is" },
+        { from: 2, to: 6, text: "includes" },
+        { from: 2, to: 10, text: "necessary\nfor" },
+        { from: 2, to: 12, text: "necessary\nfor" },
+        { from: 4, to: 5, text: "combine\nto form" },
+        { from: 4, to: 6, text: "include" },
+        { from: 4, to: 7, text: "are" },
+        { from: 4, to: 8, text: "are" },
+        { from: 4, to: 9, text: "are" },
+        { from: 5, to: 9, text: "are" },
+        { from: 5, to: 11, text: "may be" },
+        { from: 7, to: 13, text: "in" },
+        { from: 7, to: 14, text: "in" },
+        { from: 7, to: 19, text: "begin\nwith" },
+        { from: 8, to: 15, text: "with" },
+        { from: 8, to: 16, text: "with" },
+        { from: 9, to: 17, text: "aids" },
+        { from: 11, to: 18, text: "show" },
+        { from: 12, to: 19, text: "begins\nwith" },
+        { from: 17, to: 18, text: "needed\nto see" },
+        { from: 18, to: 20, text: "between" }
+      ];
  */
+
