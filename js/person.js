@@ -12,7 +12,7 @@ function init(nodeDataArray, linkDataArray) {
         contentAlignment: go.Spot.Center,  // align document to the center of the viewport
         layout:
           $(go.ForceDirectedLayout,  // automatically spread nodes apart
-            { maxIterations: 200, defaultSpringLength: 30, defaultElectricalCharge: 500 })
+            { maxIterations: 200, defaultSpringLength: 30, defaultElectricalCharge: 300 })
       });
 
   myDiagram.addDiagramListener("ObjectSingleClicked",
