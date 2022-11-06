@@ -21,26 +21,6 @@ function init(nodeDataArray, linkDataArray) {
         document.location = `/cmdbuild/ui/CMDGraph/index.html?person_id=${e.subject.cc}`;
     });
 
-  // define each Node's appearance
-  myDiagram.nodeTemplate =
-    $(go.Node, "Vertical",
-      $(go.TextBlock,
-        { margin: new go.Margin(3, 0, 0, 0),
-          maxSize: new go.Size(300, 30),
-          isMultiline: false,
-          font: "bold 18pt sans-serif" },
-        new go.Binding("text", "text")),
-      $(go.Picture,
-        { maxSize: new go.Size(50, 50) },
-        new go.Binding("source", "img")),
-      $(go.TextBlock,
-        { margin: new go.Margin(3, 0, 0, 0),
-          maxSize: new go.Size(100, 30),
-          isMultiline: false,
-       font: "bold 13pt sans-serif" },
-        new go.Binding("text", "id"))
-    );
-
   // replace the default Link template in the linkTemplateMap
   myDiagram.linkTemplate =
     $(go.Link,  // the whole link panel
@@ -66,6 +46,31 @@ function init(nodeDataArray, linkDataArray) {
           new go.Binding("text", "text"))
       )
     );
+
+  // define each Node's appearance
+  myDiagram.nodeTemplate =
+    $(go.Node, "Vertical",
+      $(go.TextBlock,
+        { margin: new go.Margin(4, 0, 0, 0),
+          maxSize: new go.Size(300, 30),
+          isMultiline: false,
+          font: "bold 18pt sans-serif",
+          verticalAlignment: go.Spot.Center,
+          textAlign: "center",
+          background:"lightgreen",
+          width: 300, height: 60 },
+        new go.Binding("text", "text")),
+      $(go.Picture,
+        { maxSize: new go.Size(50, 50) },
+        new go.Binding("source", "img")),
+      $(go.TextBlock,
+        { margin: new go.Margin(3, 0, 0, 0),
+          maxSize: new go.Size(100, 30),
+          isMultiline: false,
+       font: "bold 13pt sans-serif" },
+        new go.Binding("text", "id"))
+    );
+
   myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
 }
 
