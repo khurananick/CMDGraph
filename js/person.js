@@ -12,7 +12,7 @@ function init(nodeDataArray, linkDataArray) {
         contentAlignment: go.Spot.Center,  // align document to the center of the viewport
         layout:
           $(go.ForceDirectedLayout,  // automatically spread nodes apart
-            { maxIterations: 200, defaultSpringLength: 30, defaultElectricalCharge: 100 })
+            { maxIterations: 200, defaultSpringLength: 30, defaultElectricalCharge: 500 })
       });
 
   myDiagram.addDiagramListener("ObjectSingleClicked",
@@ -26,17 +26,18 @@ function init(nodeDataArray, linkDataArray) {
     $(go.Node, "Vertical",
       $(go.TextBlock,
         { margin: new go.Margin(3, 0, 0, 0),
-          maxSize: new go.Size(100, 30),
+          maxSize: new go.Size(300, 30),
           isMultiline: false,
-          font: "bold 10pt sans-serif" },
-        new go.Binding("text", "key")),
+          font: "bold 18pt sans-serif" },
+        new go.Binding("text", "text")),
       $(go.Picture,
         { maxSize: new go.Size(50, 50) },
         new go.Binding("source", "img")),
       $(go.TextBlock,
         { margin: new go.Margin(3, 0, 0, 0),
           maxSize: new go.Size(100, 30),
-          isMultiline: false },
+          isMultiline: false,
+       font: "bold 13pt sans-serif" },
         new go.Binding("text", "id"))
     );
 
@@ -48,11 +49,13 @@ function init(nodeDataArray, linkDataArray) {
       $(go.Shape,  // the arrowhead
         { toArrow: "standard", stroke: null }),
       $(go.Panel, "Auto",
+        /*
         $(go.Shape,  // the label background, which becomes transparent around the edges
           {
             fill: $(go.Brush, "Radial", { 0: "rgb(240, 240, 240)", 0.3: "rgb(240, 240, 240)", 1: "rgba(240, 240, 240, 0)" }),
             stroke: null
           }),
+         */
         $(go.TextBlock,  // the label text
           {
             textAlign: "center",
@@ -100,13 +103,13 @@ function getPersonName(personJson) {
 
 function mappingDisplayName(mapName) {
   if(mapName == "ManagerMapping - inverse")
-    return "Direct Report"
+    return "Direct Report to"
   if(mapName == "ManagerMapping - direct")
-    return "Manager"
+    return "Manager of"
   if(mapName == "AEtoSEMapping")
     return "AE/SE"
   if(mapName == "TeamMateMapping")
-    return "Team Member"
+    return "Team"
 
   return mapName;
 }
